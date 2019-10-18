@@ -1,0 +1,109 @@
+package com.ahqianmo.common.util;
+
+import java.security.Key;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.crypto.Cipher;
+
+import org.apache.commons.codec.binary.Base64;
+
+
+public class RSAUtil {
+
+    /**
+     * 生成RSA公钥私钥
+     *
+     * @return Map key pubKey公钥 priKey私钥
+     */
+    public static Map<String, String> createKey() throws NoSuchAlgorithmException {
+        Map<String, String> map = new HashMap<String, String>();
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+        keyPairGenerator.initialize(2048);
+        KeyPair keyPair = keyPairGenerator.generateKeyPair();
+        PublicKey pubKey = keyPair.getPublic();
+        PrivateKey privateKey = keyPair.getPrivate();
+        map.put("pubKey", new String(
+                org.apache.commons.codec.binary.Base64.encodeBase64(pubKey.getEncoded(), false)));
+        map.put("priKey", new String(
+                org.apache.commons.codec.binary.Base64.encodeBase64(privateKey.getEncoded(), false)));
+        return map;
+    }
+
+
+    /**
+     * 加密<br>
+     * 用公钥加密
+     *
+     * @param data
+     * @param key
+     * @return
+     * @throws Exception
+     */
+    public static byte[] encryptByPublicKey(byte[] data, String key) throws Exception {
+        Base64 base64 = new Base64();
+        // 对公钥解密
+        byte[] keyBytes = Base64.decodeBase64(key);
+        // 取得公钥
+        X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(keyBytes);
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        Key publicKey = keyFactory.generatePublic(x509KeySpec);
+        // 对数据加密
+        Cipher cipher = Cipher.getInstance(keyFactory.getAlgorithm());
+        cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+        return cipher.doFinal(data);
+    }
+
+    /**
+     * 解密<br>
+     * 用私钥解密
+     *
+     * @param data
+     * @param key
+     * @return
+     * @throws Exception
+     */
+    public static byte[] decryptByPrivateKey(byte[] data, String key) throws Exception {
+        Base64 base64 = new Base64();
+        // 对密钥解密
+        byte[] keyBytes = Base64.decodeBase64(key);
+        // 取得私钥
+        PKCS8EncodedKeySpec pkcs8KeySpec = new PKCS8EncodedKeySpec(keyBytes);
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        Key privateKey = keyFactory.generatePrivate(pkcs8KeySpec);
+        // 对数据解密
+        Cipher cipher = Cipher.getInstance(keyFactory.getAlgorithm());
+        cipher.init(Cipher.DECRYPT_MODE, privateKey);
+        return cipher.doFinal(data);
+    }
+
+    /**
+     * BASE64解密
+     *
+     * @param key
+     * @return
+     * @throws Exception
+     */
+    public static byte[] decryptBASE64(String key) throws Exception {
+        return Base64.decodeBase64(key);
+    }
+
+    /**
+     * BASE64加密
+     *
+     * @param key
+     * @return
+     * @throws Exception
+     */
+    public static String encryptBASE64(byte[] key) throws Exception {
+        return new String(Base64.encodeBase64(key));
+    }
+}
