@@ -1,0 +1,122 @@
+package com.ahqianmo.common.util;
+
+import com.alibaba.fastjson.JSONObject;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicHeader;
+import org.apache.http.util.EntityUtils;
+
+/**
+ * Title： Description
+ *
+ * @author qianmo on 2019/10/16 0016
+ * @version 1.0
+ */
+public class HttpRSADemo {
+    /**
+     * 返回成功状态码
+     */
+    private static final int SUCCESS_CODE = 200;
+
+    // 请求地址
+    static String url = "http://192.168.5.2:9999/insurance/v1.1/insurance/policies/web/page";
+
+    // 原始报文
+    static String content = "{\n" + "  \"policyNo\": \"sunt ut eu\",\n" + "  \"policyStatus\": \"aute\"\n" + "}";
+
+    // 公钥
+    static String pubKey = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnCpkSVDw1TdRVOJP6uPRMkHPBysJAElBUi1CpxRE1B37fVlIlLJ+OZ6gpAIGMgDtutmjLT5+Ayt3xjD5ebF4WUEuciFfaup6EOZZt9hj5WCG96uqDurXBJBF4qNb16diV22PGuxbB/sfABY+jneDSZF4h0tEcjlL4HaJh0jLTgy1cC+ySU2oYc2m4Vo8dw1lpf+w3Y5RXAzctEXF5tfijGemMgJUtHdurzPhzsjIWY9KvUmVHs6F8pQ0upi7DDBpXI6M6cNppzbNzBTw6dsq0LiwDai7+kevo+KOpAj0eLQwCPeLquq/nYsfbSYe4asHtXpDT5y6tWNE7WCYza0+ewIDAQAB";
+
+    /**
+     * 发送POST请求
+     * 
+     * @param url
+     * @param data
+     * @return JSON或者字符串
+     * @throws Exception
+     */
+    public static Object sendPost(String url, String data, String signature) throws Exception {
+        JSONObject jsonObject = null;
+        CloseableHttpClient client = null;
+        CloseableHttpResponse response = null;
+        try {
+            /**
+             * 创建一个httpclient对象
+             */
+            client = HttpClients.createDefault();
+            /**
+             * 创建一个post对象
+             */
+            HttpPost post = new HttpPost(url);
+            /**
+             * 包装成一个Entity对象
+             */
+            StringEntity entity = new StringEntity(data, "UTF-8");
+            /**
+             * 设置请求的内容
+             */
+            post.setEntity(entity);
+            /**
+             * 设置请求的报文头部的编码
+             */
+            post.setHeader(new BasicHeader("Content-Type", "application/json; charset=utf-8"));
+            /**
+             * 设置请求的报文头部的签名
+             */
+            post.setHeader(new BasicHeader("signature", signature));
+            /**
+             * 执行post请求
+             */
+            response = client.execute(post);
+            /**
+             * 获取响应码
+             */
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (SUCCESS_CODE == statusCode) {
+                /**
+                 * 通过EntityUitls获取返回内容
+                 */
+                String result = EntityUtils.toString(response.getEntity(), "UTF-8");
+                /**
+                 * 转换成json,根据合法性返回json或者字符串
+                 */
+                try {
+                    jsonObject = JSONObject.parseObject(result);
+                    return jsonObject;
+                } catch (Exception e) {
+                    return result;
+                }
+            } else {
+                System.out.println("HttpClientService-line: POST请求失败！");
+            }
+        } catch (Exception e) {
+            System.out.println("HttpClientService-line: Exception:" + e);
+        } finally {
+            response.close();
+            client.close();
+        }
+        return null;
+    }
+
+    public static void main(String[] args) {
+
+        try {
+            // md5 摘要
+            String md5Str = Md5Util.encrypt(content);
+            System.out.println("加密前报文摘要：" + md5Str);
+            // 摘要 加密
+            byte[] rsa = RSAUtil.encryptByPublicKey(md5Str.getBytes(), pubKey);
+            System.out.println("报文RSA：" + new String(rsa, "UTF-8"));
+            String base64 = RSAUtil.encryptBASE64(rsa);
+            System.out.println("报文base64(RSA)：" + base64);
+            // 发起请求
+            HttpRSADemo.sendPost(url, content, base64);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+}
