@@ -1,0 +1,80 @@
+package com.ahqianmo.common.util;
+
+import java.security.MessageDigest;
+
+/**
+ * Title：
+ * Description
+ *
+ * @author qianmo  on 2018/4/18
+ * @version 1.0
+ */
+public class Md5Util {
+    private final static int DEFAULT_BIT = 16;
+    private final static int DEFAULT_32_BIT = 32;
+
+    /**
+     * MessageDigest digest返回字节数
+     */
+    private final static int MESSAGE_DIGEST_BIT = 16;
+
+    /**
+     * 用于加密的字符
+     */
+    private final static char[] HEX_DIGITS = {'0', '1', '2', '3', '4', '5',
+            '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+
+    /**
+     * 字节流转16进制
+     *
+     * @param bytes
+     * @return
+     */
+    private static String bytesToHex(byte[] bytes) {
+        StringBuffer sb = new StringBuffer();
+        int t;
+        for (int i = 0; i < MESSAGE_DIGEST_BIT; i++) {
+            t = bytes[i];
+            if (t < 0) {
+                t += 256;
+            }
+            sb.append(HEX_DIGITS[(t >>> 4)]);
+            sb.append(HEX_DIGITS[(t % 16)]);
+        }
+        return sb.toString();
+    }
+
+    /**
+     * 默认16位
+     *
+     * @param input
+     * @return
+     * @throws Exception
+     */
+    public static String encrypt(String input) {
+//        return encrypt(input, DEFAULT_BIT);
+        return encrypt(input,DEFAULT_32_BIT);
+    }
+
+    /**
+     * @param input
+     * @param bit
+     * @return
+     * @throws Exception
+     */
+    public static String encrypt(String input, int bit) {
+        try {
+            MessageDigest md = MessageDigest.getInstance(System.getProperty(
+                    "MD5.algorithm", "MD5"));
+            if (bit == DEFAULT_BIT) {
+                return bytesToHex(md.digest(input.getBytes("utf-8")))
+                        .substring(8, 24);
+            } else {
+                return bytesToHex(md.digest(input.getBytes("utf-8")));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+}
